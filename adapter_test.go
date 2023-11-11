@@ -2,11 +2,12 @@ package heligo_test
 
 import (
 	"bytes"
-	"heligo"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sted/heligo"
 )
 
 func TestAdapter(t *testing.T) {

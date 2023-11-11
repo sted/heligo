@@ -2,10 +2,11 @@ package heligo_test
 
 import (
 	"context"
-	"heligo"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sted/heligo"
 )
 
 type tParam struct {

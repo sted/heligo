@@ -3,11 +3,12 @@ package heligo_test
 import (
 	"bytes"
 	"context"
-	"heligo"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/sted/heligo"
 )
 
 func TestParams(t *testing.T) {

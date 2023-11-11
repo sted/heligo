@@ -3,11 +3,12 @@ package heligo_test
 import (
 	"bytes"
 	"context"
-	"heligo"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/sted/heligo"
 )
 
 func TestMiddleware(t *testing.T) {
