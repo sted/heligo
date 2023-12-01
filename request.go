@@ -9,7 +9,8 @@ const MAXPARAMS = 16
 
 type params struct {
 	names    [MAXPARAMS]*string
-	valuePos [MAXPARAMS]int
+	valueBeg [MAXPARAMS]uint16
+	valueEnd [MAXPARAMS]uint16
 	count    int
 }
 
@@ -20,12 +21,12 @@ type Request struct {
 }
 
 func (r *Request) paramValue(i int) string {
-	pos := r.params.valuePos[i] >> 16
-	end := int(int16(r.params.valuePos[i]))
+	beg := r.params.valueBeg[i]
+	end := r.params.valueEnd[i]
 	if end == 0 {
-		return r.Request.URL.Path[pos:]
+		return r.Request.URL.Path[beg:]
 	} else {
-		return r.Request.URL.Path[pos : pos+end]
+		return r.Request.URL.Path[beg : beg+end]
 	}
 }
 

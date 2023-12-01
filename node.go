@@ -88,12 +88,14 @@ func (n *node) findNode(s string, offset int, p *params) *node {
 			k := 0
 			for {
 				if k == slen {
-					p.valuePos[c] = offset << 16
+					p.valueBeg[c] = uint16(offset)
+					p.valueEnd[c] = 0
 					p.count++
 					return child
 				}
 				if s[k] == SLASH {
-					p.valuePos[c] = offset<<16 + k
+					p.valueBeg[c] = uint16(offset)
+					p.valueEnd[c] = uint16(k)
 					p.count++
 					child = child.findNode(s[k:], offset+k, p)
 					if child != nil {
@@ -110,7 +112,8 @@ func (n *node) findNode(s string, offset int, p *params) *node {
 		if n.childStar != nil {
 			child = n.childStar
 			p.names[c] = &child.param
-			p.valuePos[c] = offset << 16
+			p.valueBeg[c] = uint16(offset)
+			p.valueEnd[c] = 0
 			p.count++
 			return child
 		}
