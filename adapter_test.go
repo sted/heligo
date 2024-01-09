@@ -17,7 +17,7 @@ func TestAdapter(t *testing.T) {
 		w.WriteHeader(http.StatusTeapot)
 		w.Write([]byte("Test adapter"))
 	}
-	router.Handle("GET", "/adapt", heligo.Adapt(standardHandler))
+	router.Handle("GET", "/adapt", heligo.AdaptFunc(standardHandler))
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/adapt", nil)
 	router.ServeHTTP(w, r)
@@ -47,8 +47,8 @@ func TestAdapterParams(t *testing.T) {
 			t.Fail()
 		}
 	}
-	router.Handle("GET", "/adapt/:one/:two/*three", heligo.Adapt(standardHandler))
-	router.Handle("GET", "/adapt/none", heligo.Adapt(standardHandler))
+	router.Handle("GET", "/adapt/:one/:two/*three", heligo.AdaptFunc(standardHandler))
+	router.Handle("GET", "/adapt/none", heligo.AdaptFunc(standardHandler))
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/adapt/1/2/3/45", nil)
 	router.ServeHTTP(w, r)
@@ -91,7 +91,7 @@ func TestMiddlewareAdapter(t *testing.T) {
 
 func TestMiddlewareFuncAdapter(t *testing.T) {
 	router := heligo.New()
-	router.Use(heligo.AdaptAsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	router.Use(heligo.AdaptFuncAsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
 		if r.URL.Path == "/adapt/m1" {
 			headers["Access-Control-Allow-Origin"] = []string{"*"}
