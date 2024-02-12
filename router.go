@@ -28,7 +28,7 @@ func New() *Router {
 	return &Router{trees: make(map[string]*node)}
 }
 
-// Use registers a new middleware.
+// Use registers a global middleware.
 // The middlewares are called in the order they are registered.
 func (router *Router) Use(middlewares ...Middleware) {
 	router.middlewares = append(router.middlewares, middlewares...)
@@ -84,7 +84,7 @@ func (router *Router) Handle(method string, path string, handler Handler) {
 	n.handler = handler
 }
 
-func (router *Router) GetHandler(method string, path string, p *params) Handler {
+func (router *Router) getHandler(method string, path string, p *params) Handler {
 	var n *node
 	if method[0] == 'G' {
 		n = router.get
@@ -101,9 +101,10 @@ func (router *Router) GetHandler(method string, path string, p *params) Handler 
 	return nil
 }
 
+// ServeHTTP complies with the standard http.Handler interface
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := Request{Request: r}
-	handler := router.GetHandler(r.Method, r.URL.Path, &req.params)
+	handler := router.getHandler(r.Method, r.URL.Path, &req.params)
 	if handler != nil {
 		status, err := handler(r.Context(), w, req)
 		if err != nil && router.ErrorHandler != nil {
@@ -114,10 +115,12 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Group creates a new sub-group of handlers, with common middlewares
 func (g *Group) Group(path string, middlewares ...Middleware) *Group {
 	return &Group{g.router, g.path + path, append(g.middlewares, middlewares...)}
 }
 
+// Handle registers a new handler under a group for method and path.
 func (g *Group) Handle(method string, path string, handler Handler) {
 	handler = chain(handler, g.middlewares)
 	g.router.Handle(method, g.path+path, handler)

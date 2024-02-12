@@ -40,6 +40,7 @@ func Adapt(h http.Handler) Handler {
 	}
 }
 
+// Adapt adapts a standard http.Handler to be used as a Heligo handler.
 func AdaptFunc(hf http.HandlerFunc) Handler {
 	return Adapt(hf)
 }
@@ -69,7 +70,7 @@ func AdaptMiddleware(m func(http.Handler) http.Handler) Middleware {
 	}
 }
 
-// AdaptAsMiddleware adapts a standard http.HandlerFunc to be used as
+// AdaptAsMiddleware adapts a standard http.Handler to be used as
 // a Heligo middleware. Note the this is less flexible than the previous
 // AdaptMiddleware, as it doesn't not allow to break the middleware chain
 // except in the case of errors and calls the next handler only at the end.
@@ -85,6 +86,7 @@ func AdaptAsMiddleware(h http.Handler) Middleware {
 	}
 }
 
+// AdaptFuncAsMiddleware adapts a standard http.HandlerFunc to be used as a Heligo middleware.
 func AdaptFuncAsMiddleware(hf http.HandlerFunc) Middleware {
 	return AdaptAsMiddleware(hf)
 }
