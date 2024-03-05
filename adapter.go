@@ -59,13 +59,14 @@ func ParamsFromContext(ctx context.Context) []Param {
 func AdaptMiddleware(m func(http.Handler) http.Handler) Middleware {
 	return func(next Handler) Handler {
 		return func(ctx context.Context, w http.ResponseWriter, r Request) (int, error) {
+			var status int
+			var err error
 			h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-				next(ctx, w, r)
+				status, err = next(ctx, w, r)
 			})
-			rw := &AdapterResponseWriter{w, http.StatusOK}
 			req := r.Request
-			m(h).ServeHTTP(rw, req)
-			return rw.Status(), nil
+			m(h).ServeHTTP(w, req)
+			return status, err
 		}
 	}
 }
