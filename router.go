@@ -90,6 +90,9 @@ func (router *Router) getHandler(method string, path string, p *params) Handler 
 		n = router.get
 	} else {
 		n = router.trees[method]
+		if n == nil && method[0] == 'H' {
+			n = router.get
+		}
 	}
 	if n == nil {
 		return nil

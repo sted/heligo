@@ -2,6 +2,7 @@ package heligo_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -105,11 +106,52 @@ func TestHandle(t *testing.T) {
 	}
 }
 
+// helpre straight from go-chi/chi
+func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, body)
+	if err != nil {
+		t.Fatal(err)
+		return nil, ""
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+		return nil, ""
+	}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+		return nil, ""
+	}
+	defer resp.Body.Close()
+
+	return resp, string(respBody)
+}
+
+func TestHead(t *testing.T) {
+	router := heligo.New()
+	router.Handle("GET", "/head", func(ctx context.Context, w http.ResponseWriter, r heligo.Request) (int, error) {
+		w.Header().Set("X-Test", "yes")
+		w.Write([]byte("test"))
+		return 200, nil
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+	resp, body := testRequest(t, ts, "HEAD", "/head", nil)
+	if resp.StatusCode == http.StatusNotFound || string(body) != "" || resp.Header.Get("X-Test") != "yes" {
+		t.Fail()
+	}
+	resp, body = testRequest(t, ts, "GET", "/head", nil)
+	if resp.StatusCode == http.StatusNotFound || string(body) != "test" || resp.Header.Get("X-Test") != "yes" {
+		t.Fail()
+	}
+}
+
 func BenchmarkRouter(b *testing.B) {
 	ww := httptest.NewRecorder()
 	req_base, err := http.NewRequest("GET", "/base/test", nil)
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	router := heligo.New()
 	router.Handle("GET", "/base/:test", func(ctx context.Context, _ http.ResponseWriter, r heligo.Request) (int, error) {
