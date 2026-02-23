@@ -2,6 +2,7 @@ package heligo
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -63,9 +64,11 @@ func (r *Request) Params() []Param {
 	return params
 }
 
-// ReadJSON decodes the JSON in the body into the value pointed by obj
+// ReadJSON decodes the JSON in the body into the value pointed by obj.
+// The body is limited to 1MB to prevent denial of service.
 func (r *Request) ReadJSON(obj any) error {
-	decoder := json.NewDecoder(r.Request.Body)
+	body := io.LimitReader(r.Request.Body, 1<<20)
+	decoder := json.NewDecoder(body)
 	decoder.UseNumber()
 	return decoder.Decode(obj)
 }

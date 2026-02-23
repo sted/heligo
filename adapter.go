@@ -55,14 +55,16 @@ func ParamsFromContext(ctx context.Context) []Param {
 }
 
 // AdaptMiddleware adapts a standard middleware (func(http.Handler) http.Handler)
-// to be used as a Heligo middleware
+// to be used as a Heligo middleware.
+// If the standard middleware wraps the response writer or enriches the request
+// context, those changes are propagated to the next handler.
 func AdaptMiddleware(m func(http.Handler) http.Handler) Middleware {
 	return func(next Handler) Handler {
 		return func(ctx context.Context, w http.ResponseWriter, r Request) (int, error) {
 			var status int
 			var err error
-			h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-				status, err = next(ctx, w, r)
+			h := http.HandlerFunc(func(mw http.ResponseWriter, mr *http.Request) {
+				status, err = next(mr.Context(), mw, r)
 			})
 			req := r.Request
 			m(h).ServeHTTP(w, req)

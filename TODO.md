@@ -1,7 +1,7 @@
 * [ ] OPTIONS and CORS support
 * [ ] Content Security Policy support
-* [ ] Recover panics
-* [ ] Trailing slash
+* [x] Recover panics
+* [x] Trailing slash
 * [ ] Case sensitiveness
-* [ ] Check max parameters count
+* [x] Check max parameters count
 * [ ] Other JSON helpers

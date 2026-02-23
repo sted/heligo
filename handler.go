@@ -2,7 +2,9 @@ package heligo
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"path"
 )
 
 // Handler is the signature of a Heligo handler.
@@ -19,4 +21,38 @@ func chain(h Handler, middlewares []Middleware) Handler {
 		h = middlewares[i](h)
 	}
 	return h
+}
+
+// Recover returns a middleware that recovers from panics in downstream handlers.
+// If a panic occurs, it responds with 500 Internal Server Error.
+// The optional onPanic callback receives the recovered value.
+func Recover(onPanic func(v any)) Middleware {
+	return func(next Handler) Handler {
+		return func(ctx context.Context, w http.ResponseWriter, r Request) (status int, err error) {
+			defer func() {
+				if v := recover(); v != nil {
+					if onPanic != nil {
+						onPanic(v)
+					}
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					status = http.StatusInternalServerError
+					err = fmt.Errorf("panic: %v", v)
+				}
+			}()
+			return next(ctx, w, r)
+		}
+	}
+}
+
+// CleanPaths returns a middleware that cleans URL paths
+// containing //, /./ or /../ sequences using path.Clean.
+func CleanPaths() Middleware {
+	return func(next Handler) Handler {
+		return func(ctx context.Context, w http.ResponseWriter, r Request) (int, error) {
+			if needsClean(r.URL.Path) {
+				r.URL.Path = path.Clean(r.URL.Path)
+			}
+			return next(ctx, w, r)
+		}
+	}
 }

@@ -12,12 +12,13 @@ type node struct {
 func (n *node) nextNode(s string) *node {
 	slen := len(s)
 	if slen == 1 {
-		if s[0] == COLON {
+		switch s[0] {
+		case COLON:
 			if n.childColon == nil {
 				n.childColon = &node{text: string(COLON)}
 			}
 			return n.childColon
-		} else if s[0] == STAR {
+		case STAR:
 			if n.childStar == nil {
 				n.childStar = &node{text: string(STAR)}
 			}
@@ -82,6 +83,9 @@ func (n *node) findNode(s string, offset int, p *params) *node {
 	}
 	if n.childColon != nil || n.childStar != nil {
 		c := p.count
+		if c >= MAXPARAMS {
+			return nil
+		}
 		if n.childColon != nil {
 			child = n.childColon
 			p.names[c] = &child.param

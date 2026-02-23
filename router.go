@@ -11,10 +11,11 @@ const (
 )
 
 type Router struct {
-	get          *node
-	trees        map[string]*node
-	middlewares  []Middleware
-	ErrorHandler func(int, error)
+	get           *node
+	trees         map[string]*node
+	middlewares   []Middleware
+	ErrorHandler  func(http.ResponseWriter, *http.Request, int, error)
+	TrailingSlash bool
 }
 
 type Group struct {
@@ -40,9 +41,28 @@ func (router *Router) Group(path string, middlewares ...Middleware) *Group {
 }
 
 // Handle registers a new handler for method and path.
+// If TrailingSlash is true, both "/path" and "/path/" will match.
 func (router *Router) Handle(method string, path string, handler Handler) {
 	handler = chain(handler, router.middlewares)
+	router.addRoute(method, path, handler)
 
+	if router.TrailingSlash && len(path) > 1 {
+		if path[len(path)-1] == SLASH {
+			router.addRoute(method, path[:len(path)-1], handler)
+		} else {
+			// skip paths ending with a wildcard param
+			lastSlash := len(path) - 1
+			for lastSlash > 0 && path[lastSlash] != SLASH {
+				lastSlash--
+			}
+			if lastSlash < len(path)-1 && path[lastSlash+1] != STAR {
+				router.addRoute(method, path+"/", handler)
+			}
+		}
+	}
+}
+
+func (router *Router) addRoute(method string, path string, handler Handler) {
 	var n *node
 	if method[0] == 'G' {
 		n = router.get
@@ -104,6 +124,28 @@ func (router *Router) getHandler(method string, path string, p *params) Handler 
 	return nil
 }
 
+// hasPath checks if the path is registered under any method other than the given one
+func (router *Router) hasPath(method string, path string) bool {
+	var p params
+	if method != http.MethodGet {
+		if router.get != nil {
+			if n := router.get.findNode(path, 0, &p); n != nil && n.handler != nil {
+				return true
+			}
+		}
+	}
+	for m, tree := range router.trees {
+		if m == method {
+			continue
+		}
+		p = params{}
+		if n := tree.findNode(path, 0, &p); n != nil && n.handler != nil {
+			return true
+		}
+	}
+	return false
+}
+
 // ServeHTTP complies with the standard http.Handler interface
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := Request{Request: r}
@@ -111,16 +153,24 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if handler != nil {
 		status, err := handler(r.Context(), w, req)
 		if err != nil && router.ErrorHandler != nil {
-			router.ErrorHandler(status, err)
+			router.ErrorHandler(w, r, status, err)
 		}
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
+// HasPath reports whether the given path is registered under any method
+// other than the one specified. Useful for implementing 405 responses.
+func (router *Router) HasPath(method string, path string) bool {
+	return router.hasPath(method, path)
+}
+
 // Group creates a new sub-group of handlers, with common middlewares
 func (g *Group) Group(path string, middlewares ...Middleware) *Group {
-	return &Group{g.router, g.path + path, append(g.middlewares, middlewares...)}
+	mw := make([]Middleware, len(g.middlewares), len(g.middlewares)+len(middlewares))
+	copy(mw, g.middlewares)
+	return &Group{g.router, g.path + path, append(mw, middlewares...)}
 }
 
 // Handle registers a new handler under a group for method and path.
